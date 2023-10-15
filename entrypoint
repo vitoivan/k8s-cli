@@ -1,6 +1,6 @@
 #!/bin/bash
 
-here=$(pwd)
+here=$(dirname $0)
 main_menu=$(echo "k8s cache" | tr " " "\n")
 actions=$(echo "port-forward logs describe-pod" | tr " " "\n")
 k8s_path="$here/k8s"
