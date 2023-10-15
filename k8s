@@ -1,45 +1,67 @@
 #!/bin/bash
 
-main_menu=$(echo "k8s cache" | tr " " "\n")
+k8_get_ctxs() {
+    kubectl config get-contexts | awk '{ print $2 }' | grep -v NAME | xargs
+}
 
-contexts=$(echo "dev/hmg prd" | tr " " "\n")
-namespaces=$(echo "n1 n2 n3 n4 n5 n6" | tr " " "\n")
-actions=$(echo "port-forward logs describe-pod" | tr " " "\n")
+k8_cur_ctx() {
+    kubectl config current-context
+}
 
-here=$(pwd)
+k8_use_ctx() {
+    kubectl config use-context $1
+}
 
-main() {
-    menu_seleceted_opt=$(echo "$main_menu" | fzf --header="select an option" --header-first)
-
-    handle_db_flow
-    handle_k8s_flow
+k8_get_ns() {
+    kubectl get namespaces | awk '{print $1}' | grep -v NAME | xargs
 }
 
 
-
-handle_db_flow() {
-    if [ "$menu_seleceted_opt" == "cache" ]; then
-        db_opts=$(echo "reset" | tr " " "\n")
-        db_seleceted_opt=$(echo "$db_opts" | fzf --header="select an option" --header-first)
-
-        if [ "$db_seleceted_opt" == "reset" ]; then
-            $here/database reset
-        fi
-    fi
+## $1 == namespace
+k8_get_pods() {
+    kubectl get pods -n $1 | awk '{print $1}' | grep -v NAME | xargs
 }
 
-
-handle_k8s_flow(){
-    if [ "$menu_seleceted_opt" == "k8s" ]; then
-        selected_ctx=$(echo "$contexts" | fzf --header="select a context" --header-first)
-        selected_ns=$(echo "$namespaces" | fzf --header="select a namespace" --header-first)
-        selected_action=$(echo "$actions" | fzf --header="select an action" --header-first)
-    fi
+## $1 == namespace
+k8_get_services() {
+    kubectl get services -n $1
 }
 
 
 
 
-# echo "$selected_ctx $selected_ns $selected_action"
+## $1 == namespace & $2 == service name
+k8_log_from_service() {
+    c="digimalls"
+    kubectl logs -f --container $c -n $1 service/$2
+}
 
-main
+## $1 == namespace & $2 == pod name
+k8_log_from_pod() {
+    c="digimalls"
+    kubectl logs -f --container $c -n $1 pod/$2
+}
+
+if [ "$1" == "" ]; then
+    return
+elif [ "$1" == "k8_get_ctxs" ]; then
+    k8_get_ctxs
+elif [ "$1" == "k8_cur_ctx" ]; then
+    k8_cur_ctx
+elif [ "$1" == "k8_use_ctx" ]; then
+    k8_use_ctx $2
+elif [ "$1" == "k8_get_ns" ]; then
+    k8_get_ns
+elif [ "$1" == "k8_get_pods" ]; then
+    k8_get_pods $2
+elif [ "$1" == "k8_get_services" ]; then
+    k8_get_services $2
+elif [ "$1" == "k8_log_from_service" ]; then
+    k8_log_from_service $2 $3
+elif [ "$1" == "k8_log_from_pod" ]; then
+    k8_log_from_pod $2 $3
+else
+    echo "unknown command"
+fi
+
+

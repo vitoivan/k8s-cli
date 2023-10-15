@@ -17,6 +17,13 @@ db_create_if_not_exists() {
     fi
 }
 
+db_add_cmd_to_history(){
+sqlite3 "$db_path" << EOF
+    INSERT INTO history (cmd, label) VALUES ('$1', '$2');
+EOF
+}
+
+
 db_reset(){
 sqlite3 "$db_path" << EOF
     DROP TABLE IF EXISTS namespaces;
@@ -41,21 +48,27 @@ sqlite3 "$db_path" << EOF
         id INTEGER PRIMARY KEY,
         name TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS history (
+        id INTEGER PRIMARY KEY,
+        cmd TEXT NOT NULL,
+        label TEXT NOT NULL
+    );
 EOF
 echo "tables created"
 }
 
 print_help() {
     echo "Usage: database [create|reset|migrate|help]"
-    printf "\tcreate - create a new database\n"
     printf "\treset - reset the database\n"
-    printf "\tmigrate - run the database migrations\n"
+    printf "\add_cmd_to_history - add a command to the history table\n"
     printf "\thelp - print this help\n"
 }
 
 if [ "$1" == "reset" ]; then
     db_create_if_not_exists
     db_reset
+elif [ "$1" == "add_cmd_to_history" ]; then
+    db_add_cmd_to_history $2 $3
 else
     print_help
 fi
