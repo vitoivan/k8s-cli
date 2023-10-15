@@ -1,83 +1,45 @@
 #!/bin/bash
 
-main_menu=$(echo "kubernetes cache" | tr " " "\n")
+main_menu=$(echo "k8s cache" | tr " " "\n")
+
 contexts=$(echo "dev/hmg prd" | tr " " "\n")
 namespaces=$(echo "n1 n2 n3 n4 n5 n6" | tr " " "\n")
 actions=$(echo "port-forward logs describe-pod" | tr " " "\n")
 
+here=$(pwd)
+
 main() {
     menu_seleceted_opt=$(echo "$main_menu" | fzf --header="select an option" --header-first)
 
-    try_handle_db_flow
+    handle_db_flow
+    handle_k8s_flow
 }
 
 
 
-try_handle_db_flow() {
+handle_db_flow() {
     if [ "$menu_seleceted_opt" == "cache" ]; then
-        db_opts=$(echo "reset update_namespace update_context" | tr " " "\n")
+        db_opts=$(echo "reset" | tr " " "\n")
         db_seleceted_opt=$(echo "$db_opts" | fzf --header="select an option" --header-first)
 
-        if [ "$db_seleceted_opt" == "reset_db" ]; then
-            db_reset
-        elif [ "$db_seleceted_opt" == "reset_cache" ]; then
-            echo "reset cache"
-        elif [ "$db_seleceted_opt" == "reset" ]; then
-            db_reset
-            ## TODO: call kubectl for reset cache too
+        if [ "$db_seleceted_opt" == "reset" ]; then
+            $here/database reset
         fi
     fi
 }
 
 
-# selected_ctx=$(echo "$contexts" | fzf --header="select a context" --header-first)
-# selected_ns=$(echo "$namespaces" | fzf --header="select a namespace" --header-first)
-# selected_action=$(echo "$actions" | fzf --header="select an action" --header-first)
+handle_k8s_flow(){
+    if [ "$menu_seleceted_opt" == "k8s" ]; then
+        selected_ctx=$(echo "$contexts" | fzf --header="select a context" --header-first)
+        selected_ns=$(echo "$namespaces" | fzf --header="select a namespace" --header-first)
+        selected_action=$(echo "$actions" | fzf --header="select an action" --header-first)
+    fi
+}
+
+
 
 
 # echo "$selected_ctx $selected_ns $selected_action"
-
-
-## sqlite3 db functions
-db_create_if_not_exists() {
-    if [ ! -d "$HOME/.config/k8" ]; then
-        mkdir "$HOME/.config/k8"
-    fi
-    if [ ! -f "$HOME/.config/k8/k8.db" ]; then
-        touch "$HOME/.config/k8/k8.db"
-    echo "created $HOME/.config/k8/k8.db"
-    else
-    echo "db already exists"
-    fi
-}
-
-
-db_reset(){
-sqlite3 "$HOME/.config/k8/k8.db" << EOF
-    DROP TABLE IF EXISTS namespaces;
-    DROP TABLE IF EXISTS contexts;
-    DROP TABLE IF EXISTS favorites;
-EOF
-echo "tables dropped"
-db_run_migrations
-}
-
-db_run_migrations(){
-sqlite3 "$HOME/.config/k8/k8.db" << EOF
-    CREATE TABLE IF NOT EXISTS namespaces (
-        id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS contexts (
-        id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS favorites (
-        id INTEGER PRIMARY KEY,
-        name TEXT NOT NULL
-    );
-EOF
-echo "tables created"
-}
 
 main
