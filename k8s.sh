@@ -42,6 +42,11 @@ k8_log_from_pod() {
     kubectl logs -f --container $c -n $1 pod/$2
 }
 
+## $1 == namespace & $2 == pod name
+k8_get_pod_metrics() {
+    kubectl top pod $2 --namespace=$1 
+}
+
 if [ "$1" == "" ]; then
     return
 elif [ "$1" == "k8_get_ctxs" ]; then
@@ -60,6 +65,8 @@ elif [ "$1" == "k8_log_from_service" ]; then
     k8_log_from_service $2 $3
 elif [ "$1" == "k8_log_from_pod" ]; then
     k8_log_from_pod $2 $3
+elif [ "$1" == "k8_get_pod_metrics" ]; then
+    k8_get_pod_metrics $2 $3
 else
     echo "unknown command"
 fi

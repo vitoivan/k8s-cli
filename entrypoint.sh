@@ -2,10 +2,14 @@
 
 here=$(dirname $0)
 main_menu=$(echo "k8s cache" | tr " " "\n")
-actions=$(echo "port-forward logs describe-pod" | tr " " "\n")
-k8s_path="$here/k8s"
+actions=$(echo "port-forward logs describe-pod pod-metrics" | tr " " "\n")
+k8s_path="$here/k8s.sh"
 
 
+green() {
+    text=$1
+    echo "$(tput setaf 2)$text$(tput sgr0)"
+}
 
 handle_db_flow() {
     if [ "$menu_seleceted_opt" == "cache" ]; then
@@ -34,10 +38,12 @@ handle_k8s_flow(){
 
         selected_ns=$(echo "$namespaces" | fzf --header="select a namespace" --header-first)
 
-
         if [ "$selected_ns" == "" ]; then
            return
         fi
+
+        ns_pretty=$(green $selected_ns)
+        echo "Selected namespace: $ns_pretty"
 
         selected_action=$(echo "$actions" | fzf --header="select an action" --header-first)
 
@@ -51,6 +57,8 @@ handle_k8s_flow(){
             handle_logs
         elif [ "$selected_action" == "describe-pod" ]; then
             handle_describe_pod
+        elif [ "$selected_action" == "pod-metrics" ]; then
+            handle_pod_metrics
         fi
     fi
 }
@@ -133,6 +141,18 @@ handle_describe_pod() {
     kubectl describe pod $selected_pod -n $selected_ns
 }
 
+handle_pod_metrics() {
+    pods=$($k8s_path k8_get_pods $selected_ns | tr " " "\n") 
+
+    selected_pod=$(echo "$pods" | fzf --header="select a pod" --header-first)
+
+    if [ "$selected_pod" == "" ]; then
+        return
+    fi
+
+    kubectl top pod $selected_pod --namespace=$selected_ns 
+}
+
 
 handle_logs() {
     modes=$(echo "pod service" | tr " " "\n")
@@ -168,9 +188,10 @@ handle_logs() {
 
 
 main() {
-    menu_seleceted_opt=$(echo "$main_menu" | fzf --header="select an option" --header-first)
+    # menu_seleceted_opt=$(echo "$main_menu" | fzf --header="select an option" --header-first)
+    menu_seleceted_opt="k8s"
 
-    handle_db_flow
+    # handle_db_flow
     handle_k8s_flow
 }
 
